@@ -1,5 +1,5 @@
 # ==============================================
-# Kelompok 23
+# Kelompok 22
 # Nama:
 # Adrian Hermawan - J0403251044
 # Ghazyhibban Kumayl Elbees - J0403251136
