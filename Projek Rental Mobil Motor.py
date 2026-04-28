@@ -10,18 +10,6 @@
 # Projek Matakuliah Algoritma dan Struktur Data:
 # Rental Mobil dan Motor
 # ==============================================
-# ==============================================
-# Kelompok 22
-# Nama:
-# Adrian Hermawan - J0403251044
-# Ghazyhibban Kumayl Elbees - J0403251136
-# Kelas : B1
-# ==============================================
-
-# ==============================================
-# Projek Matakuliah Algoritma dan Struktur Data:
-# Rental Mobil dan Motor
-# ==============================================
 
 #biar password tidak terlihat
 import getpass
