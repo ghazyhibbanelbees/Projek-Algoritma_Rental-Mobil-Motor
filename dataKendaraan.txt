@@ -1,4 +1,4 @@
-A1|Pajero|SUV|1000000|Ready
+A4|Avanza|Mobil|500000|Ready
+A112|Beat|Motor|100000|Ready
 A2|Lamborghini|Sportcar|2000000|Ready
 A3|Xpander|SUV|900000|Ready
-A4|Avanza|Bensin|500000|Ready

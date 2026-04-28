@@ -11,6 +11,11 @@
 # Rental Mobil dan Motor
 # ==============================================
 
+#biar password tidak terlihat
+import getpass
+
+
+#class node utama
 class Node:
     def __init__(self, id, nama, jenis, harga, status="Ready"):
         self.id = id
@@ -20,41 +25,72 @@ class Node:
         self.harga = harga
         self.next = None
 
+#class linked list
 class LinkedList:
     def __init__(self):
         self.head = None
         self.tail = None
 
+#==========================CRUD==============================
+
+
     def tambah_kendaraan(self, id, nama, jenis, harga, status="Ready"):
+        #nodeK = node kendaraan baru
         nodeK = Node(id, nama, jenis, harga, status)
+
+        #kalau data masih kosong, node baru jadi head sekaligus tail
         if self.head is None:
             self.head = nodeK
             self.tail = nodeK
+
+        #kalau tidak kosong
         else:
+            #sisipkan nodeK ke ujung list, sebelah kanan tail
             self.tail.next = nodeK
+            #jadikan nodeK menjadi tail baru
             self.tail = nodeK
 
+    #fungsi tampilkan
     def tampilkan(self):
         current = self.head
+
+        #cegah error kalau selfhead kosong/linkedlist kosong
         if self.head is None:
             print("Maaf, data masih kosong.")
             return
         
+        #head table
         print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10}")
         print("-" * 60)
+
+        #looping sampai ujung linked list
         while current is not None:
+
+            #print semua data
             print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10}")
             current = current.next
 
+
+
+    #Fungsi Update berdasarkan id
     def ubah_kendaraan(self, id):
         current = self.head
+
+        #looping sampai ujung linked list
         while current is not None:
-            if current.id == id:
+
+            #kalau id yang dicari sudah match
+            if current.id.upper() == id.upper():
+
+                #mmasukkan data baru
                 print("Data ditemukan, masukkan data baru:")
                 current.nama = input("Nama baru: ")
                 current.jenis = input("Jenis baru: ")
+
+                #try except untuk mencegah error kalau user input selain integer
                 try:
                     current.harga = int(input("Harga baru: "))
+                    #valueerror == salah data input
                 except ValueError:
                     print("Harga harus angka!")
                     return
@@ -62,82 +98,238 @@ class LinkedList:
                 print("Data berhasil diubah!")
                 return
             current = current.next
+
         print("ID tidak ditemukan!")
 
+
+    #fungsi delete
     def hapus_kendaraan(self, id):
         current = self.head
+        #variabel previous/sebelum
         prev = None
+
+        #looping sampai ujung linked list
         while current is not None:
-            if current.id == id:
+
+            #data sudah match
+            if current.id.upper() == id.upper():
+
+                #kalau ketemu di data pertama
                 if prev is None:
+                    #head pindah ke node kedua
                     self.head = current.next
+
+                    #kalau node yang dihapus juga sebagai tail(berarti hanya ada 1 data di list)
                     if current == self.tail:
+                        #list jadi kosong
                         self.tail = None
                 else:
+                    #hubungkan prev dengan current.next, contoh = 3->1->2 jadi 3->2
                     prev.next = current.next
+                    
+                    #kalau data adalah teil
                     if current == self.tail:
+                        #tail mundur satu
                         self.tail = prev
+
                 print("Kendaraan berhasil dihapus!")
                 return
+            
+
+            #jadikan variabel prev sebagai current
             prev = current
+            #current lanjut ke data selanjutnya
             current = current.next
         print("ID tidak ditemukan!")
 
+#==========================SEARCHING AND SORTING==============================
+
+
+    #bubble sort
     def sort_by_name(self):
+        # kalau list kosong atau hanya 1 data, tidak perlu diurutkan
         if not self.head or not self.head.next:
             return
-
-        swapped = True
+    
+        swapped = True  # penanda apakah terjadi pertukaran data
         while swapped:
-            swapped = False
-            current = self.head
+            swapped = False  # reset setiap iterasi
+            current = self.head  # mulai dari head
+        
+            # loop sampai node terakhir
             while current.next:
+            
+                # bandingkan nama (pakai lower biar tidak sensitif huruf besar/kecil)
                 if current.nama.lower() > current.next.nama.lower():
+                
+                    # tukar semua isi data antar node (bukan node-nya)
                     current.id, current.next.id = current.next.id, current.id
                     current.nama, current.next.nama = current.next.nama, current.nama
                     current.jenis, current.next.jenis = current.next.jenis, current.jenis
                     current.harga, current.next.harga = current.next.harga, current.harga
                     current.status, current.next.status = current.next.status, current.status
-                    swapped = True
+                
+                    swapped = True  # tandai bahwa ada pertukaran
+            
+                # lanjut ke node berikutnya
                 current = current.next
+    
         print("Data berhasil diurutkan berdasarkan Nama (A-Z).")
 
     def cari_kendaraan(self, keyword):
-        current = self.head
-        hasil = []
+        current = self.head  # mulai dari head linked list
+        hasil = []  # list untuk menyimpan hasil pencarian
+
+        # looping semua node
         while current:
+            # cek apakah keyword ada di nama atau status (tidak sensitif huruf besar/kecil)
             if keyword.lower() in current.nama.lower() or keyword.lower() in current.status.lower():
-                hasil.append(current)
-            current = current.next
+                hasil.append(current)  # simpan node yang cocok
         
+            current = current.next  # lanjut ke node berikutnya
+    
+        # jika ada hasil ditemukan
         if hasil:
             print(f"\n--- Hasil Pencarian '{keyword}' ---")
+        
+            # tampilkan semua hasil
             for node in hasil:
                 print(f"ID: {node.id} | Nama: {node.nama} | Status: {node.status}")
+                print()  # baris kosong biar rapi
         else:
+            # jika tidak ada yang cocok
             print("Data tidak ditemukan.")
 
-    def simpan_file(self, filename="dataKendaraan.txt"):
-        current = self.head
-        with open(filename, "w") as file:
-            while current is not None:
-                file.write(f"{current.id}|{current.nama}|{current.jenis}|{current.harga}|{current.status}\n")
-                current = current.next
+
+#==========================FILE HANDLING==============================
 
     def load_file(self, filename="dataKendaraan.txt"):
+        import os  # import untuk cek file
+    
+        # cek apakah file ada atau tidak
         if not os.path.exists(filename):
-            return
+            return  # kalau tidak ada, langsung keluar
+    
+        # buka file dalam mode read
         with open(filename, "r") as file:
+            # baca file per baris
             for line in file:
+            
+                # hapus enter lalu pisahkan berdasarkan "|"
                 data = line.strip().split("|")
+            
+                # pastikan jumlah data sesuai (5 kolom)
                 if len(data) == 5:
-                    self.tambah_kendaraan(data[0], data[1], data[2], int(data[3]), data[4])
+                
+                    # tambahkan ke linked list
+                    self.tambah_kendaraan(
+                        data[0],              # id
+                        data[1],              # nama
+                        data[2],              # jenis
+                        int(data[3]),         # harga (diubah ke int)
+                        data[4]               # status
+                    )
+
+
+    def simpan_file(self, filename="dataKendaraan.txt"):
+        current = self.head  # mulai dari node pertama (head)
+    
+        # buka file dalam mode write (menimpa isi lama)
+        with open(filename, "w") as file:
+            # looping semua node
+            while current is not None:
+                # tulis data ke file dengan format dipisah "|"
+                file.write(f"{current.id}|{current.nama}|{current.jenis}|{current.harga}|{current.status}\n")
+            
+                current = current.next  # pindah ke node berikutnya
+
+#========================Fitur Login===================
+#cegah username yang duplikat
+def username_duplikat(username):
+    try:
+        with open("dataAkun.txt", "r") as file:
+            #cek satu persatu line
+            for line in file:
+                #jadikan data per line data individual masing masing, dan jadi list
+                data = line.strip().split("|")
+                #cek apakah username sudah ada di file
+                if username==data[0]:
+                    return True
+                
+    except:
+        pass
+    return False
+
+def register():
+    print("\n" + "="*20 + " Register " + "="*20)
+    username = input("Username: ")
+    password = input("Password: ")
+    
+    #kalau return true
+    if username_duplikat(username):
+        print("Username sudah terpakai!")
+        return
+    
+    #buka file untuk append
+    with open("dataAkun.txt", "a") as file:
+        file.write(f"{username}|{password}|user\n")
+    
+    print("Akun selesai dibuat!")
+
+def login():
+    print("\n" + "="*20 + " Login " + "="*20)
+    #Input username dan password
+    username = input("Username: ")
+    password = input("Password: ")
+
+    try:
+        #read file akun
+        with open("dataAkun.txt", "r") as file:
+            #cek setiap line di file
+            for line in file:
+                #pisahkan data di line berdasarkan "|" dan dijadikan list
+                data = line.strip().split("|")
+                #kalau username dan password match dengan yang ada di file, login berhasil
+                if username == data[0] and password == data[1]:
+                    print("Login Berhasil")
+                    return data[2] #role nya, admin atau user
+    
+    #cegah error file tidak ada
+    except FileNotFoundError:
+        print("File akun belum ada!")
+
+    print("Username atau password salah.")
+    return None
+
+
 
 def main():
     ll = LinkedList()
     ll.load_file()
+
+    role = None
+
+    while role is None:
+        print("\n" + "="*20 + " Rental Mobil dan Motor Babeh Ipul " + "="*20)
+        print("1. Login")
+        print("2. Register")
+        print("0. Keluar")
+
+        pilih=input("Pilih menu(1-2): ")
+
+        if pilih == "1":
+            role = login()
+        elif pilih == "2":
+            register()
+        elif pilih == "0":
+            print("Terima kasih!")
+            break
+        else:
+            print("Pilihan tidak valid.")
     
     while True:
+        ll.tampilkan()
+        print()
         print("\n" + "="*20 + " Rental Mobil dan Motor Babeh Ipul " + "="*20)
         print("1. Tambah Kendaraan")
         print("2. Tampilkan Daftar Kendaraan")

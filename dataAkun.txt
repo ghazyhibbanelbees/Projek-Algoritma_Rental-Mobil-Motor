@@ -1,0 +1,2 @@
+admin|admin123|admin
+adrian|a1a2|user
