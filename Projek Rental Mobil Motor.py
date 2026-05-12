@@ -76,6 +76,47 @@ class Stack:
             if item[1] == username:
                 print(f"{item[0]:<20} | {item[1]:<10} | {item[2]:<15} | {item[3]:<10}")
 
+# ========================== QUEUE (ANTREAN) ==========================
+# node khusus untuk antrean
+class NodeAntrean:
+    def __init__(self, nama_user, id_kendaraan):
+        self.nama_user = nama_user
+        self.id_kendaraan = id_kendaraan
+        self.next = None
+
+# class queue untuk mengelola antrean
+class QueueAntrean:
+    def __init__(self):
+        self.front = None
+        self.rear = None
+
+    # fungsi masuk antrean (enqueue)
+    def enqueue(self, nama_user, id_kendaraan):
+        # nodeA = node antrean baru
+        nodeA = NodeAntrean(nama_user, id_kendaraan)
+        # kalau antrean kosong
+        if self.rear is None:
+            self.front = self.rear = nodeA
+            return
+        # kalau tidak kosong, tambahkan di belakang
+        self.rear.next = nodeA
+        self.rear = nodeA
+
+    # fungsi tampilkan antrean
+    def tampilkan_antrean(self):
+        # cegah error kalau antrean kosong
+        if self.front is None:
+            print("Antrean saat ini kosong.")
+            return
+        
+        print("\n" + "="*15 + " DAFTAR ANTREAN (QUEUE) " + "="*15)
+        current = self.front
+        no = 1
+        # looping semua antrean
+        while current:
+            print(f"{no}. User: {current.nama_user} mengantre ID: {current.id_kendaraan}")
+            current = current.next
+            no += 1
 
 
 #class linked list
@@ -86,8 +127,23 @@ class LinkedList:
 
 #==========================CRUD==============================
 
+    # fungsi cek id duplicate
+    def cek_id(self, id_baru):
+        current = self.head
+        # looping untuk mencari id yang sama
+        while current:
+            if current.id.upper() == id_baru.upper():
+                return True # id ketemu
+            current = current.next
+        return False # id aman
+
 
     def tambah_kendaraan(self, id, nama, jenis, harga, status="Ready"):
+        # validasi id duplicate
+        if self.cek_id(id):
+            print(f"Gagal! ID {id} sudah ada dalam sistem.")
+            return False
+
         #nodeK = node kendaraan baru
         nodeK = Node(id, nama, jenis, harga, status)
 
@@ -102,6 +158,7 @@ class LinkedList:
             self.tail.next = nodeK
             #jadikan nodeK menjadi tail baru
             self.tail = nodeK
+        return True
 
     #fungsi tampilkan
     def tampilkan(self):
@@ -275,13 +332,14 @@ class LinkedList:
                 if len(data) == 5:
                 
                     # tambahkan ke linked list
-                    self.tambah_kendaraan(
-                        data[0],              # id
-                        data[1],              # nama
-                        data[2],              # jenis
-                        int(data[3]),         # harga (diubah ke int)
-                        data[4]               # status
-                    )
+                    # Menggunakan cara manual agar id dari file tidak kena validasi duplicate
+                    nodeK = Node(data[0], data[1], data[2], int(data[3]), data[4])
+                    if self.head is None:
+                        self.head = nodeK
+                        self.tail = nodeK
+                    else:
+                        self.tail.next = nodeK
+                        self.tail = nodeK
 
 
     def simpan_file(self, filename="dataKendaraan.txt"):
@@ -299,7 +357,7 @@ class LinkedList:
 #==========================FITUR SEWA & HISTORY==============================
 
     # Fungsi untuk melakukan transaksi sewa
-    def sewa_kendaraan(self, id_cari, nama_penyewa, history):
+    def sewa_kendaraan(self, id_cari, nama_penyewa, history, antrean):
         current = self.head
 
         while current:
@@ -322,7 +380,12 @@ class LinkedList:
                     return True
 
                 else:
-                    print("Kendaraan sedang tidak tersedia.")
+                    # fitur antrean jika mobil sedang dipakai
+                    print(f"Kendaraan {current.nama} sedang tidak tersedia (Dipakai).")
+                    pilih_antrean = input("Ingin masuk antrean? (y/n): ")
+                    if pilih_antrean.lower() == 'y':
+                        antrean.enqueue(nama_penyewa, current.id)
+                        print("Anda berhasil masuk antrean.")
                     return False
 
             current = current.next
@@ -413,6 +476,7 @@ def main():
     ll = LinkedList()
     ll.load_file()
     history = Stack()
+    antrean = QueueAntrean() # inisialisasi class queue
 
     role = None
     user_aktif = None
@@ -450,9 +514,10 @@ def main():
             print("6. Cari Kendaraan (Nama/Status)")
             print("7. Sewa Kendaraan") 
             print("8. Riwayat Sewa & Cek Tanggal") 
+            print("9. Lihat Antrean (Queue)") # Menu baru antrean
             print("0. Keluar")
             
-            pilih = input("Pilih Menu (0-8): ")
+            pilih = input("Pilih Menu (0-9): ")
             
             if pilih == "1":
                 print("\n======== Tambah Kendaraan ========")
@@ -464,9 +529,10 @@ def main():
                 except ValueError:
                     print("Harga harus angka!")
                     continue
-                ll.tambah_kendaraan(id, nama, jenis, harga)
-                ll.simpan_file()
-                print("Kendaraan berhasil ditambahkan!")
+                # memanggil fungsi tambah dengan validasi id duplicate
+                if ll.tambah_kendaraan(id, nama, jenis, harga):
+                    ll.simpan_file()
+                    print("Kendaraan berhasil ditambahkan!")
                 
             elif pilih == "2":
                 print("\n======== Daftar Kendaraan ========")
@@ -494,13 +560,16 @@ def main():
             elif pilih == "7": # Eksekusi Fitur Sewa
                 ll.tampilkan()
                 id_sewa = input("Masukkan ID kendaraan yang ingin disewa: ")
-                if ll.sewa_kendaraan(id_sewa, user_aktif, history):
+                if ll.sewa_kendaraan(id_sewa, user_aktif, history, antrean):
                     ll.simpan_file() # Update status kendaraan ke file
                 
             elif pilih == "8": # Eksekusi Fitur History & Tanggal
                 # Fitur cek tanggal hari ini
                 print(f"\nTanggal Hari Ini: {datetime.now().strftime('%d %B %Y')}")
                 history.tampilkan()
+
+            elif pilih == "9": # Eksekusi Tampilkan Queue
+                antrean.tampilkan_antrean()
                 
             elif pilih == "0":
                 print("Terima kasih!")
@@ -518,11 +587,12 @@ def main():
             print("1. Tampilkan Daftar Kendaraan")
             print("2. Urutkan Kendaraan (A-Z)")
             print("3. Cari Kendaraan (Nama/Status)")
-            print("4. Sewa Kendaraan") 
+            print("4. Sewa Kendaraan (Fitur Antrean)") 
             print("5. Riwayat Sewa Saya") 
+            print("6. Lihat Antrean") # Menu antrean untuk user
             print("0. Keluar")
             
-            pilih = input("Pilih Menu (0-5): ")
+            pilih = input("Pilih Menu (0-6): ")
                 
             if pilih == "1":
                 print("\n======== Daftar Kendaraan ========")
@@ -540,13 +610,16 @@ def main():
             elif pilih == "4": # Eksekusi Fitur Sewa
                 ll.tampilkan()
                 id_sewa = input("Masukkan ID kendaraan yang ingin disewa: ")
-                if ll.sewa_kendaraan(id_sewa, user_aktif, history):
+                if ll.sewa_kendaraan(id_sewa, user_aktif, history, antrean):
                     ll.simpan_file() # Update status kendaraan ke file
                 
             elif pilih == "5": # Eksekusi Fitur History & Tanggal
                 # Fitur cek tanggal hari ini
                 print(f"\nTanggal Hari Ini: {datetime.now().strftime('%d %B %Y')}")
                 history.tampilkan_history_user(user_aktif)
+
+            elif pilih == "6": # Eksekusi Tampilkan Queue
+                antrean.tampilkan_antrean()
                 
             elif pilih == "0":
                 print("Terima kasih!")
