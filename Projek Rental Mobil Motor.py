@@ -14,17 +14,18 @@
 #biar password tidak terlihat
 import getpass
 import os # Untuk mengecek keberadaan file history
-from datetime import datetime # Untuk fitur cek tanggal otomatis
+from datetime import datetime, timedelta # Untuk fitur cek tanggal otomatis
 
 
 #class node utama
 class Node:
-    def __init__(self, id, nama, jenis, harga, status="Ready"):
+    def __init__(self, id, nama, jenis, harga, status="Ready", tanggal_kembali="-"):
         self.id = id
         self.nama = nama
         self.status = status
         self.jenis = jenis
         self.harga = harga
+        self.tanggal_kembali = tanggal_kembali
         self.next = None
 
 # ========================== STACK ==========================
@@ -170,14 +171,14 @@ class LinkedList:
             return
         
         #head table
-        print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10}")
-        print("-" * 60)
+        print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10} | {'Kembali':<15}")
+        print("-" * 90)
 
         #looping sampai ujung linked list
         while current is not None:
 
             #print semua data
-            print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10}")
+            print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10} | {current.tanggal_kembali:<15}")
             current = current.next
 
 
@@ -329,11 +330,11 @@ class LinkedList:
                 data = line.strip().split("|")
             
                 # pastikan jumlah data sesuai (5 kolom)
-                if len(data) == 5:
+                if len(data) == 6:
                 
                     # tambahkan ke linked list
                     # Menggunakan cara manual agar id dari file tidak kena validasi duplicate
-                    nodeK = Node(data[0], data[1], data[2], int(data[3]), data[4])
+                    nodeK = Node(data[0], data[1], data[2], int(data[3]), data[4], data[5])
                     if self.head is None:
                         self.head = nodeK
                         self.tail = nodeK
@@ -350,7 +351,7 @@ class LinkedList:
             # looping semua node
             while current is not None:
                 # tulis data ke file dengan format dipisah "|"
-                file.write(f"{current.id}|{current.nama}|{current.jenis}|{current.harga}|{current.status}\n")
+                file.write(f"{current.id}|{current.nama}|{current.jenis}|{current.harga}|{current.status}|{current.tanggal_kembali}\n")
             
                 current = current.next  # pindah ke node berikutnya
 
@@ -361,37 +362,117 @@ class LinkedList:
         current = self.head
 
         while current:
+
             if current.id.upper() == id_cari.upper():
 
                 if current.status.lower() == "ready":
+
+                    try:
+                        lama_sewa = int(input("Berapa hari ingin menyewa?: "))
+                    except ValueError:
+                        print("Input harus angka!")
+                        return False
+
                     current.status = "Dipakai"
 
-                    tgl_sewa = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+                    tanggal_sewa = datetime.now()
 
-                    # masukkan ke stack
+                    tanggal_kembali = tanggal_sewa + timedelta(days=lama_sewa)
+
+                    current.tanggal_kembali = tanggal_kembali.strftime("%d-%m-%Y")
+
+                    total_biaya = current.harga * lama_sewa
+
                     history.push([
-                        tgl_sewa,
+                        tanggal_sewa.strftime("%d-%m-%Y %H:%M:%S"),
                         nama_penyewa,
                         current.nama,
-                        current.harga
+                        total_biaya
                     ])
 
-                    print(f"Berhasil menyewa {current.nama}!")
+                    print("\n===== DETAIL SEWA =====")
+                    print(f"Penyewa          : {nama_penyewa}")
+                    print(f"Kendaraan        : {current.nama}")
+                    print(f"Tanggal Sewa     : {tanggal_sewa.strftime('%d-%m-%Y')}")
+                    print(f"Tanggal Kembali  : {current.tanggal_kembali}")
+                    print(f"Durasi           : {lama_sewa} hari")
+                    print(f"Total Biaya      : Rp{total_biaya}")
+
                     return True
 
                 else:
-                    # fitur antrean jika mobil sedang dipakai
-                    print(f"Kendaraan {current.nama} sedang tidak tersedia (Dipakai).")
+                    print(f"Kendaraan {current.nama} sedang dipakai sampai {current.tanggal_kembali}")
+
                     pilih_antrean = input("Ingin masuk antrean? (y/n): ")
-                    if pilih_antrean.lower() == 'y':
+
+                    if pilih_antrean.lower() == "y":
                         antrean.enqueue(nama_penyewa, current.id)
-                        print("Anda berhasil masuk antrean.")
+                        print("Berhasil masuk antrean.")
+
                     return False
 
             current = current.next
 
         print("ID tidak ditemukan!")
         return False
+    
+    def update_status_otomatis(self):
+        current = self.head
+
+        while current:
+
+            if current.status == "Dipakai" and current.tanggal_kembali != "-":
+
+                tanggal_kembali = datetime.strptime(current.tanggal_kembali, "%d-%m-%Y")
+
+                if datetime.now() >= tanggal_kembali:
+                    current.status = "Telat"
+                    print(f"{current.nama} TELAT mengembalikan! Unit: {current.nama}")
+
+            current = current.next
+
+    def kembalikan_kendaraan(self, id_kendaraan):
+        current = self.head
+
+        while current:
+            if current.id.upper() == id_kendaraan.upper():
+                
+                if current.status == "Dipakai" or current.status == "Telat":
+                    denda = 0
+
+                    if current.status == "Telat":
+                        tanggal_kembali = datetime.strptime(current.tanggal_kembali, "%d-%m-%Y")
+
+                        selisih_hari = (datetime.now() - tanggal_kembali).days
+
+                        #kurang dari 1 hari dihitung 1 hari
+                        if selisih_hari < 1:
+                            selisih_hari = 1
+
+                        denda = selisih_hari * 100000
+
+
+                    print("\n===== DETAIL PENGEMBALIAN =====")
+                    print(f"Kendaraan : {current.nama}")
+                    print(f"Status    : {current.status}")
+                    print(f"Denda     : Rp{denda}")
+
+                    current.status = "Ready"
+                    current.tanggal_kembali = "-"
+
+                    print("Kendaraan berhasil dikembalikan.")
+                    return
+
+                else:
+                    print("Kendaraan sedang tidak dipakai.")
+                    return
+
+            current = current.next
+
+        print("ID kendaraan tidak ditemukan.")
+
+
+
 
     # Fungsi untuk menampilkan riwayat transaksi yang tersimpan di file
     def tampilkan_history(self):
@@ -501,7 +582,9 @@ def main():
     
     if role == "admin":
         while True:
-            # ll.tampilkan() # Dihapus dari loop agar menu lebih rapi
+            ll.update_status_otomatis()
+
+            
             print()
             print("\n" + "="*20 + " Rental Mobil dan Motor Babeh Ipul " + "="*20)
             print(f"User: {user_aktif} | Role: {role}")
@@ -514,7 +597,8 @@ def main():
             print("6. Cari Kendaraan (Nama/Status)")
             print("7. Sewa Kendaraan") 
             print("8. Riwayat Sewa & Cek Tanggal") 
-            print("9. Lihat Antrean (Queue)") # Menu baru antrean
+            print("9. Lihat Antrean")
+            print("10. Pengembalian Kendaraan")
             print("0. Keluar")
             
             pilih = input("Pilih Menu (0-9): ")
@@ -568,8 +652,14 @@ def main():
                 print(f"\nTanggal Hari Ini: {datetime.now().strftime('%d %B %Y')}")
                 history.tampilkan()
 
-            elif pilih == "9": # Eksekusi Tampilkan Queue
+            elif pilih == "9": 
                 antrean.tampilkan_antrean()
+                
+            elif pilih == "10":
+                ll.tampilkan()
+                id_kembali = input("Masukkan kendaraan yang akan dikembalikan: ")
+                ll.kembalikan_kendaraan(id_kembali)
+                ll.tampilkan()
                 
             elif pilih == "0":
                 print("Terima kasih!")
@@ -579,8 +669,9 @@ def main():
 
     elif role == "user":
         while True:
-            # ll.tampilkan() # Dihapus dari loop agar menu lebih rapi
-            print()
+            ll.update_status_otomatis()
+
+
             print("\n" + "="*20 + " Rental Mobil dan Motor Babeh Ipul " + "="*20)
             print(f"User: {user_aktif} | Role: {role}")
             print("-" * 40)
