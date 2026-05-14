@@ -11,8 +11,6 @@
 # Rental Mobil dan Motor
 # ==============================================
 
-#biar password tidak terlihat
-import getpass
 import os # Untuk mengecek keberadaan file history
 from datetime import datetime, timedelta # Untuk fitur cek tanggal otomatis
 
@@ -77,6 +75,23 @@ class Stack:
             if item[1] == username:
                 print(f"{item[0]:<20} | {item[1]:<10} | {item[2]:<15} | {item[3]:<10}")
 
+        # simpan history ke file
+    def simpan_history(self, item, filename="riwayatSewa.txt"):
+        with open(filename, "a") as file:
+            file.write(f"{item[0]}|{item[1]}|{item[2]}|{item[3]}\n")
+
+    # load history dari file
+    def load_history(self, filename="riwayatSewa.txt"):
+        if not os.path.exists(filename):
+            return
+
+        with open(filename, "r") as file:
+            for line in file:
+                data = line.strip().split("|")
+
+                if len(data) == 4:
+                    self.push(data)
+
 # ========================== QUEUE (ANTREAN) ==========================
 # node khusus untuk antrean
 class NodeAntrean:
@@ -118,6 +133,43 @@ class QueueAntrean:
             print(f"{no}. User: {current.nama_user} mengantre ID: {current.id_kendaraan}")
             current = current.next
             no += 1
+
+        # fungsi keluar antrean (dequeue)
+    def dequeue(self):
+        # kalau antrean kosong
+        if self.front is None:
+            return None
+
+        data_keluar = self.front
+
+        # pindahkan front ke node berikutnya
+        self.front = self.front.next
+
+        # kalau antrean jadi kosong
+        if self.front is None:
+            self.rear = None
+
+        return data_keluar
+
+    def simpan_antrean(self, filename = "dataAntrean.txt"):
+        current = self.front
+        
+        with open(filename,"w") as file:
+            while current:
+                file.write(f"{current.nama_user}|{current.id_kendaraan}\n")
+                current = current.next
+
+    def load_antrean(self, filename = "dataAntrean.txt"):
+        if not os.path.exists(filename):
+            return
+        
+        with open(filename, "r") as file:
+            for line in file:
+
+                data = line.strip().split("|")
+
+                if len(data) == 2:
+                    self.enqueue(data[0], data[1])
 
 
 #class linked list
@@ -279,6 +331,7 @@ class LinkedList:
                     current.jenis, current.next.jenis = current.next.jenis, current.jenis
                     current.harga, current.next.harga = current.next.harga, current.harga
                     current.status, current.next.status = current.next.status, current.status
+                    current.tanggal_kembali, current.next.tanggal_kembali = current.next.tanggal_kembali, current.tanggal_kembali
                 
                     swapped = True  # tandai bahwa ada pertukaran
             
@@ -383,12 +436,14 @@ class LinkedList:
 
                     total_biaya = current.harga * lama_sewa
 
-                    history.push([
+                    data_history = [
                         tanggal_sewa.strftime("%d-%m-%Y %H:%M:%S"),
                         nama_penyewa,
                         current.nama,
                         total_biaya
-                    ])
+                    ]
+                    history.push(data_history)
+                    history.simpan_history(data_history)
 
                     print("\n===== DETAIL SEWA =====")
                     print(f"Penyewa          : {nama_penyewa}")
@@ -407,6 +462,7 @@ class LinkedList:
 
                     if pilih_antrean.lower() == "y":
                         antrean.enqueue(nama_penyewa, current.id)
+                        antrean.simpan_antrean()
                         print("Berhasil masuk antrean.")
 
                     return False
@@ -431,7 +487,7 @@ class LinkedList:
 
             current = current.next
 
-    def kembalikan_kendaraan(self, id_kendaraan):
+    def kembalikan_kendaraan(self, id_kendaraan, antrean, history):
         current = self.head
 
         while current:
@@ -460,6 +516,40 @@ class LinkedList:
                     current.status = "Ready"
                     current.tanggal_kembali = "-"
 
+                    node_Antrean = antrean.front
+
+                    if node_Antrean and node_Antrean.id_kendaraan.upper() == current.id.upper():
+
+                        print(f"\nNotifikasi:")
+                        print(f"{node_Antrean.nama_user} otomatis menyewa {current.nama}")
+
+                        # otomatis sewakan ke user antrean pertama
+                        lama_sewa = 1  # default 1 hari
+
+                        current.status = "Dipakai"
+
+                        tanggal_sewa = datetime.now()
+                        tanggal_kembali = tanggal_sewa + timedelta(days=lama_sewa)
+
+                        current.tanggal_kembali = tanggal_kembali.strftime("%d-%m-%Y")
+
+                        # hapus dari antrean
+                        antrean.dequeue()
+                        antrean.simpan_antrean()
+                        
+                        total_biaya = current.harga * lama_sewa
+
+                        data_history = [
+                            tanggal_sewa.strftime("%d-%m-%Y %H:%M:%S"),
+                            node_Antrean.nama_user,
+                            current.nama,
+                            total_biaya
+                        ]
+
+                        history.push(data_history)
+                        history.simpan_history(data_history)
+
+
                     print("Kendaraan berhasil dikembalikan.")
                     return
 
@@ -470,27 +560,6 @@ class LinkedList:
             current = current.next
 
         print("ID kendaraan tidak ditemukan.")
-
-
-
-
-    # Fungsi untuk menampilkan riwayat transaksi yang tersimpan di file
-    def tampilkan_history(self):
-        # Cek apakah file riwayat ada menggunakan library os
-        if not os.path.exists("riwayatSewa.txt"):
-            print("Belum ada riwayat transaksi.")
-            return
-
-        print("\n" + "="*15 + " HISTORY SEWA " + "="*15)
-        print(f"{'Tanggal':<20} | {'Penyewa':<10} | {'Kendaraan':<15} | {'Biaya':<10}")
-        print("-" * 65)
-        
-        # Baca file riwayat per baris
-        with open("riwayatSewa.txt", "r") as file:
-            for line in file:
-                data = line.strip().split("|")
-                if len(data) == 4:
-                    print(f"{data[0]:<20} | {data[1]:<10} | {data[2]:<15} | {data[3]:<10}")
 
 
 #========================Fitur Login===================
@@ -557,7 +626,9 @@ def main():
     ll = LinkedList()
     ll.load_file()
     history = Stack()
-    antrean = QueueAntrean() # inisialisasi class queue
+    history.load_history()
+    antrean = QueueAntrean() 
+    antrean.load_antrean()
 
     role = None
     user_aktif = None
@@ -601,7 +672,7 @@ def main():
             print("10. Pengembalian Kendaraan")
             print("0. Keluar")
             
-            pilih = input("Pilih Menu (0-9): ")
+            pilih = input("Pilih Menu (0-10): ")
             
             if pilih == "1":
                 print("\n======== Tambah Kendaraan ========")
@@ -658,8 +729,9 @@ def main():
             elif pilih == "10":
                 ll.tampilkan()
                 id_kembali = input("Masukkan kendaraan yang akan dikembalikan: ")
-                ll.kembalikan_kendaraan(id_kembali)
+                ll.kembalikan_kendaraan(id_kembali, antrean, history)
                 ll.tampilkan()
+                ll.simpan_file()
                 
             elif pilih == "0":
                 print("Terima kasih!")
