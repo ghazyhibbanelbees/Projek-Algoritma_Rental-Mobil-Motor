@@ -1,20 +1,20 @@
-B4|Aerox|Motor|170000|Ready|-
-M9|Alphard|Mobil|2500000|Ready|-
-M1|Avanza|Mobil|500000|Dipakai|15-05-2026
-B1|Beat|Motor|100000|Dipakai|15-05-2026
-M4|Brio|Mobil|350000|Ready|-
-B6|CBR 150R|Motor|300000|Ready|-
-M7|Civic Turbo|Mobil|1200000|Ready|-
-M5|Fortuner|Mobil|1500000|Ready|-
-B9|GSX-R150|Motor|280000|Ready|-
-M10|Hiace|Mobil|1800000|Ready|-
-M3|Innova|Mobil|750000|Ready|-
-M8|Lamborghini|Mobil|7000000|Ready|-
-B3|NMAX|Motor|180000|Ready|-
-M6|Pajero|Mobil|1600000|Dipakai|24-05-2026
-B5|PCX|Motor|200000|Dipakai|15-05-2026
-B7|R15|Motor|320000|Ready|-
-B10|Scoopy|Motor|120000|Ready|-
-B2|Vario 160|Motor|150000|Ready|-
-M2|Xpander|Mobil|900000|Ready|-
-B8|ZX-25R|Motor|650000|Ready|-
+B1|Beat|Motor|100000|Dipakai|17-05-2026|adrian
+B10|Scoopy|Motor|120000|Dipakai|17-05-2026|afka
+B2|Vario 160|Motor|150000|Ready|-|-
+B4|Aerox|Motor|170000|Dipakai|18-05-2026|admin
+B3|NMAX|Motor|180000|Ready|-|-
+B5|PCX|Motor|200000|Telat|15-05-2026|adrian
+B9|GSX-R150|Motor|280000|Ready|-|-
+B6|CBR 150R|Motor|300000|Ready|-|-
+B7|R15|Motor|320000|Ready|-|-
+M4|Brio|Mobil|350000|Ready|-|-
+M1|Avanza|Mobil|500000|Ready|-|-
+B8|ZX-25R|Motor|650000|Ready|-|-
+M3|Innova|Mobil|750000|Ready|-|-
+M2|Xpander|Mobil|900000|Ready|-|-
+M7|Civic Turbo|Mobil|1200000|Ready|-|-
+M5|Fortuner|Mobil|1500000|Ready|-|-
+M6|Pajero|Mobil|1600000|Dipakai|24-05-2026|adrian
+M10|Hiace|Mobil|1800000|Ready|-|-
+M9|Alphard|Mobil|2500000|Ready|-|-
+M8|Lamborghini|Mobil|7000000|Ready|-|-
