@@ -269,15 +269,14 @@ class LinkedList:
             return
         
         #head table
-        print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10} | {'Kembali':<15}")
-        print("-" * 90)
+       print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10} | {'Penyewa':<12} | {'Kembali':<15}")
+print("-" * 110)
 
         #looping sampai ujung linked list
         while current is not None:
 
             #print semua data
-            print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10} | {current.tanggal_kembali:<15}")
-            current = current.next
+            print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10} | {current.penyewa_aktif:<12} | {current.tanggal_kembali:<15}")
 
 
     def tampilkan_khusus_sewa(self):
