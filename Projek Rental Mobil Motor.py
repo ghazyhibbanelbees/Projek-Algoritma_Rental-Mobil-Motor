@@ -15,6 +15,28 @@ import os # Untuk mengecek keberadaan file history
 from datetime import datetime, timedelta # Untuk fitur cek tanggal otomatis
  
 
+def save_pendapatan(pendapatan, filename="pendapatan.txt"):
+    with open(filename, "w") as file:
+        file.write("===== LAPORAN PENDAPATAN RENTAL =====\n")
+        file.write(f"Total Pendapatan: Rp{pendapatan}\n")
+        file.write(f"Last Update: {datetime.now().strftime('%d-%m-%Y %H:%M:%S')}\n")
+
+def load_pendapatan(filename="pendapatan.txt"):
+    if not os.path.exists(filename):
+        return 0
+
+    with open(filename, "r") as file:
+        for line in file:
+            if "Total Pendapatan" in line:
+                try:
+                    return int(line.split("Rp")[1].strip())
+                except:
+                    return 0
+    return 0
+
+pendapatan = load_pendapatan()
+
+
 #class node utama
 class Node:
 
@@ -269,14 +291,16 @@ class LinkedList:
             return
         
         #head table
-       print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10} | {'Penyewa':<12} | {'Kembali':<15}")
-print("-" * 110)
+        print(f"{'ID':<5} | {'Nama':<15} | {'Jenis':<10} | {'Harga':<10} | {'Status':<10} | {'Penyewa':<12} | {'Kembali':<15}")
+        print("-" * 110)
 
         #looping sampai ujung linked list
         while current is not None:
 
             #print semua data
             print(f"{current.id:<5} | {current.nama:<15} | {current.jenis:<10} | {current.harga:<10} | {current.status:<10} | {current.penyewa_aktif:<12} | {current.tanggal_kembali:<15}")
+            
+            current = current.next
 
 
     def tampilkan_khusus_sewa(self):
@@ -291,6 +315,20 @@ print("-" * 110)
             if current.status == "Dipakai" or current.status == "Telat":
                 print(f"{current.id:<5} | {current.nama:<15} | {current.penyewa_aktif:<10} | {current.status:<10} | {current.tanggal_kembali:<15}")
             
+            current = current.next
+
+    def tampilkan_khusus_sewa_saya(self, user_aktif):
+
+        current = self.head
+
+        print(f"{'ID':<5} | {'Nama':<15} | {'Penyewa':<10} | {'Status':<10} | {'Kembali':<15}")
+        print("-" * 70)
+
+        while current:
+
+            if current.penyewa_aktif == user_aktif:
+                print(f"{current.id:<5} | {current.nama:<15} | {current.penyewa_aktif:<10} | {current.status:<10} | {current.tanggal_kembali:<15}")
+                
             current = current.next
 
 
@@ -318,7 +356,13 @@ print("-" * 110)
                     print("Harga harus angka!")
                     return
 
-                current.status = input("Status baru (Ready/Dipakai): ")
+                status_baru = input("Status baru (Ready/Dipakai/Telat): ")
+
+                if status_baru not in ["Ready", "Dipakai", "Telat"]:
+                    print("Status tidak valid!")
+                    return
+
+                current.status = status_baru
                 print("Data berhasil diubah!")
                 return
 
@@ -582,7 +626,7 @@ print("-" * 110)
         while current:
 
             # cek apakah keyword ada di nama (tidak sensitif huruf besar/kecil)
-            if keyword.lower() in current.status.lower() :
+            if keyword.lower() == current.status.lower() :
                 hasil.append(current)  # simpan node yang cocok
         
             current = current.next  # lanjut ke node berikutnya
@@ -629,8 +673,6 @@ print("-" * 110)
 #========================== FILE HANDLING ==============================
 
     def load_file(self, filename="dataKendaraan.txt"):
-
-        import os  # import untuk cek file
     
         # cek apakah file ada atau tidak
         if not os.path.exists(filename):
@@ -675,9 +717,9 @@ print("-" * 110)
 
 
 #========================== FITUR SEWA & HISTORY ==============================
-
     # Fungsi untuk melakukan transaksi sewa
     def sewa_kendaraan(self, id_cari, nama_penyewa, history, antrean):
+        global pendapatan
 
         current = self.head
 
@@ -686,20 +728,56 @@ print("-" * 110)
             if current.id.upper() == id_cari.upper():
 
                 if current.status == "Dipakai" and current.penyewa_aktif == nama_penyewa:
+
                     print("\nAnda sedang menyewa unit ini.")
                     ext = input("Perpanjang sewa? (y/n): ")
 
                     if ext.lower() == 'y':
-                        hari = int(input("Tambah berapa hari?: "))
-                        tgl_lama = datetime.strptime(current.tanggal_kembali, "%d-%m-%Y")
-                        current.tanggal_kembali = (tgl_lama + timedelta(days=hari)).strftime("%d-%m-%Y")
-                        print("Masa sewa berhasil diperpanjang.")
-                        return True
+                        try:
+                            hari = int(input("Tambah berapa hari?: "))
+
+                            if current.tanggal_kembali == "-" or current.tanggal_kembali is None:
+                                print("Tanggal tidak valid untuk diperpanjang.")
+                                return False
+
+                            tgl_lama = datetime.strptime(current.tanggal_kembali, "%d-%m-%Y")
+                            tgl_baru = tgl_lama + timedelta(days=hari)
+
+                            current.tanggal_kembali = tgl_baru.strftime("%d-%m-%Y")
+
+                            # =========================
+                            # PENDAPATAN EXTEND (BENAR)
+                            # =========================
+                            
+                            biaya_extend = current.harga * hari
+                            pendapatan += biaya_extend
+                            save_pendapatan(pendapatan)
+
+
+                            data_history = [
+                                datetime.now().strftime("%d-%m-%Y %H:%M:%S"),
+                                nama_penyewa + " (EXTEND)",
+                                current.nama,
+                                biaya_extend
+                            ]
+
+                            history.push(data_history)
+                            history.simpan_history(data_history)
+
+                            print(f"Extend berhasil. Tambahan biaya: Rp{biaya_extend}")
+                            return True
+
+                        except ValueError:
+                            print("Input hari harus angka!")
+                            return False
 
                 if current.status.lower() == "ready":
 
                     try:
                         lama_sewa = int(input("Berapa hari ingin menyewa?: "))
+                        if lama_sewa <= 0:
+                            print("Hari sewa harus lebih dari 0.")
+                            return False
                     except ValueError:
                         print("Input harus angka!")
                         return False
@@ -713,6 +791,10 @@ print("-" * 110)
                     current.tanggal_kembali = tanggal_kembali.strftime("%d-%m-%Y")
 
                     total_biaya = current.harga * lama_sewa
+                   
+          
+                    pendapatan += total_biaya
+                    save_pendapatan(pendapatan)
 
                     data_history = [
                         tanggal_sewa.strftime("%d-%m-%Y %H:%M:%S"),
@@ -752,7 +834,7 @@ print("-" * 110)
         return False
     
 
-    def update_status_otomatis(self):
+    def update_status_otomatis(self, role):
 
         current = self.head
 
@@ -762,9 +844,11 @@ print("-" * 110)
 
                 tanggal_kembali = datetime.strptime(current.tanggal_kembali, "%d-%m-%Y")
 
-                if datetime.now() >= tanggal_kembali:
+                if datetime.now() > tanggal_kembali:
+                    
                     current.status = "Telat"
-                    print(f"\n[NOTIF] {current.nama} TELAT mengembalikan! Unit: {current.nama}")
+                    if role == "admin":
+                        print(f"\n[NOTIF] {current.nama} TELAT mengembalikan! Unit: {current.nama}")
 
             current = current.next
 
@@ -801,7 +885,6 @@ print("-" * 110)
                     current.tanggal_kembali = "-"
                     current.penyewa_aktif = "-"
 
-                    # Cek Antrean Otomatis
                     node_Antrean = antrean.front
 
                     if node_Antrean and node_Antrean.id_kendaraan.upper() == current.id.upper():
@@ -809,8 +892,7 @@ print("-" * 110)
                         print(f"\n[INFO ANTREAN]:")
                         print(f"{node_Antrean.nama_user} otomatis menyewa {current.nama}")
 
-                        # otomatis sewakan ke user antrean pertama
-                        lama_sewa = 1  # default 1 hari
+                        lama_sewa = 1
 
                         current.status = "Dipakai"
                         current.penyewa_aktif = node_Antrean.nama_user
@@ -820,10 +902,9 @@ print("-" * 110)
 
                         current.tanggal_kembali = tanggal_kembali.strftime("%d-%m-%Y")
 
-                        # hapus dari antrean
                         antrean.dequeue()
                         antrean.simpan_antrean()
-                        
+
                         total_biaya = current.harga * lama_sewa
 
                         data_history = [
@@ -835,6 +916,8 @@ print("-" * 110)
 
                         history.push(data_history)
                         history.simpan_history(data_history)
+
+                        return
 
 
                     print("Kendaraan berhasil dikembalikan.")
@@ -903,9 +986,10 @@ def login():
                 #pisahkan data di line berdasarkan "|" dan dijadikan list
                 data = line.strip().split("|")
                 #kalau username dan password match dengan yang ada di file, login berhasil
-                if username == data[0] and password == data[1]:
-                    print("Login Berhasil!")
-                    return data[0], data[2] # Mengembalikan username dan role
+                if len(data) == 3:
+                    if username == data[0] and password == data[1]:
+                        print("Login Berhasil!")
+                        return data[0], data[2] # Mengembalikan username dan role
     
     #cegah error file tidak ada
     except FileNotFoundError:
@@ -915,9 +999,11 @@ def login():
     return None, None
 
 
+
 # ========================== MAIN PROGRAM ======================================
 
 def main():
+
 
     ll = LinkedList()
     ll.load_file()
@@ -955,13 +1041,13 @@ def main():
                 print("Pilihan tidak valid.")
         
 
-        # ================= MENU ADMIN BARU =================
+        # ================= MENU ADMIN =================
 
         if role == "admin":
 
             while True:
 
-                ll.update_status_otomatis()
+                ll.update_status_otomatis(role)
 
                 print("\n" + "="*20 + " DASHBOARD ADMIN " + "="*20)
                 print(f"Petugas: {user_aktif}")
@@ -969,7 +1055,8 @@ def main():
                 print("1. Kelola Kendaraan")
                 print("2. Transaksi Rental")
                 print("3. Data & Riwayat")
-                print("4. Logout")
+                print("4. Total Pendapatan")
+                print("5. Logout")
                 print("0. Tutup Aplikasi")
 
                 pilih = input("Pilih Menu: ")
@@ -1138,7 +1225,6 @@ def main():
                         print("\n" + "="*15 + " DATA & RIWAYAT " + "="*15)
                         print("1. Riwayat Sewa")
                         print("2. Lihat Antrean")
-                        print("3. Cek Tanggal Hari Ini")
                         print("0. Kembali")
 
                         sub = input("Pilih Menu: ")
@@ -1151,17 +1237,16 @@ def main():
 
                             antrean.tampilkan_antrean()
 
-                        elif sub == "3":
-
-                            print(f"\nTanggal Hari Ini: {datetime.now().strftime('%d %B %Y')}")
 
                         elif sub == "0":
                             break
 
                         else:
                             print("Pilihan tidak valid.")
-
                 elif pilih == "4":
+                    print(f"Total Pendapatan: Rp{pendapatan}")
+
+                elif pilih == "5":
 
                     print("Logout berhasil...")
                     break
@@ -1182,7 +1267,7 @@ def main():
 
             while True:
 
-                ll.update_status_otomatis()
+                ll.update_status_otomatis(role)
 
                 print("\n" + "="*20 + " MENU PELANGGAN " + "="*20)
                 print(f"Penyewa: {user_aktif}")
@@ -1203,7 +1288,8 @@ def main():
 
                         print("\n" + "="*15 + " DAFTAR KENDARAAN " + "="*15)
                         print("1. Tampilkan Semua Kendaraan")
-                        print("2. Tampilkan Kendaraan Disewa")
+                        print("2. Tampilkan Kendaraan yang sedang disewa")
+                        print("3. Tampilkan Kendaraan yang saya sewa")
                         print("0. Kembali")
 
                         sub = input("Pilih Menu: ")
@@ -1215,6 +1301,10 @@ def main():
                         elif sub == "2":
 
                             ll.tampilkan_khusus_sewa()
+
+                        elif sub == "3":
+
+                            ll.tampilkan_khusus_sewa_saya(user_aktif)
 
                         elif sub == "0":
 
